@@ -1,0 +1,33 @@
+FROM python:3.7
+
+RUN apt-get update
+RUN apt-get --yes install libopenblas-dev libomp-dev
+
+COPY requirements_topics.txt .
+RUN pip3 install -r requirements_topics.txt && rm requirements_topics.txt
+
+COPY ./src /src
+COPY ./models /data
+ENV PYTHONPATH="$PYTHONPATH:/src/python/com"
+
+ENV FROM_DATE="01.05.2018"
+ENV TO_DATE="02.05.2018"
+
+ENV EMBEDDING_FILE_PATH="../../data/lenta.vec"
+ENV IDF_FILE_PATH="../../data/idf.txt"
+ENV CLUSTER_CENTROIDS_FILE_PATH="../../data/cluster_centroids.txt"
+ENV CLUSTER_NAMES_FILE_PATH="../../data/cluster_names.txt"
+ENV TOPICS_MATCHING_FILE_PATH="../../data/topics_matching.txt"
+ENV MIN_SENTENCE_LEN=3
+ENV TOPIC_COS_THRESHOLD=0.5
+ENV NEWS_CLUSTERING_THRESHOLD=0.025
+ENV NEWS_CLUSTERING_MIN_CLUSTER_SIZE=2
+ENV STORIES_CLUSTERING_THRESHOLD=0.25
+ENV STORIES_CLUSTERING_MIN_CLUSTER_SIZE=2
+ENV NGRAMS_FOR_TOPICS_LABELLING=3
+ENV STORIES_CONNECTING_COS_THRESHOLD=0.9
+ENV STORY_WINDOW=3
+ENV LEXIC_RESULT_WORD_NUM=10
+
+WORKDIR /src/python
+CMD ["python3", "./com/expleague/media_space/topics_script.py"]
