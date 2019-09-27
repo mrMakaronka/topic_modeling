@@ -1,10 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from dataclasses_json import dataclass_json
 
-
-@dataclass_json
 @dataclass
 class Article:
     id: Any
@@ -14,7 +11,6 @@ class Article:
     title: str
 
 
-@dataclass_json
 @dataclass
 class ArticleBatched(Article):
     __slots__ = [
