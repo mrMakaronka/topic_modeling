@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import Optional, List, Tuple
 
 import faiss
+import emoji
 import numpy as np
 from sklearn.preprocessing import normalize
 
@@ -22,6 +23,7 @@ class SimpleTextNormalizer(TextNormalizer):
         self.punctuation = ['!', '\"', '&', '(', ')', '[', ']', ',', '.', '?', '{', '}']
 
     def normalized_sentences(self, text: str):
+        text = emoji.get_emoji_regexp().sub(r'.', text)
         text = text.replace('?', '.').replace('!', '.')
         sentences = text.split('.')
         for s in sentences:
