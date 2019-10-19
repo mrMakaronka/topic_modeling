@@ -22,7 +22,8 @@ class ProcessingManager:
         topics_labeller = EmbeddingTopicsLabeller()
         embedding2topics = Embedding2TopicsClustering(params.cluster_centroids_file_path,
                                                       params.cluster_names_file_path,
-                                                      params.topic_cos_threshold)
+                                                      params.topic_cos_threshold,
+                                                      params.scale_dist)
         self.news_clustering = NewsClustering(params.news_clustering_threshold, params.news_clustering_min_cluster_size,
                                               embedding2topics, topics_labeller)
         self.story_clustering = StoriesClustering(params.stories_clustering_threshold,
