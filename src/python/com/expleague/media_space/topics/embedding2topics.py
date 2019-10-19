@@ -40,9 +40,8 @@ class Embedding2TopicsClustering(Embedding2Topics):
             else:
                 # noinspection PyArgumentList
                 dist, ind = self.index.search(norm_embedding, 2)
-                scale = 200
-                np_sum = np.sum(np.exp(-scale * dist))
-                dist = np.exp(-scale * dist) / np_sum
+                np_sum = np.sum(np.exp(-self.scale_dist * dist))
+                dist = np.exp(-self.scale_dist * dist) / np_sum
                 result_vec[ind] = dist
 
         if np.count_nonzero(result_vec) == 0:
@@ -50,10 +49,11 @@ class Embedding2TopicsClustering(Embedding2Topics):
         result_vec = result_vec / np.linalg.norm(result_vec)
         return result_vec
 
-    def __init__(self, centroids_path: str, names_path: str, threshold: float):
+    def __init__(self, centroids_path: str, names_path: str, threshold: float, scale_dist: int):
         self.threshold = threshold
         self.centroids = FileReadUtil.load_cluster_centroids(centroids_path)
         self.names = FileReadUtil.load_clusters_names(names_path)
         self.index = faiss.IndexFlatIP(self.centroids.shape[1])
+        self.scale_dist = scale_dist
         # noinspection PyArgumentList
         self.index.add(self.centroids)

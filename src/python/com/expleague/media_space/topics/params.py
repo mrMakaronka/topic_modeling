@@ -26,3 +26,4 @@ class ProcessingParams:
     stories_connecting_cos_threshold: float
     story_window: int
     lexic_result_word_num: int
+    scale_dist: int

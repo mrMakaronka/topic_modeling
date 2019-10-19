@@ -86,7 +86,7 @@ def main():
     stories_connecting_cos_threshold = float(os.getenv('STORIES_CONNECTING_COS_THRESHOLD', 0.9))
     story_window = int(os.getenv('STORY_WINDOW', 3))
     lexic_result_word_num = int(os.getenv('LEXIC_RESULT_WORD_NUM', 10))
-
+    sclale_dist = int(os.getenv("SCALE_DIST", 200))
     processor = TopicsScript(
         StartupParams(start, end),
         ProcessingParams(embedding_file_path, idf_file_path, cluster_centroids_file_path,
@@ -95,7 +95,7 @@ def main():
                          news_clustering_threshold,
                          news_clustering_min_cluster_size, stories_clustering_threshold,
                          stories_clustering_min_cluster_size, ngrams_for_topics_labelling,
-                         stories_connecting_cos_threshold, story_window, lexic_result_word_num))
+                         stories_connecting_cos_threshold, story_window, lexic_result_word_num, sclale_dist))
     processor.run()
     # cProfile.runctx('processor.run()', globals(), locals())
 
