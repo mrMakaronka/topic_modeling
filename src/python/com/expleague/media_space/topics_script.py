@@ -4,6 +4,7 @@ import os
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
+from sklearn.metrics.cluster import adjusted_rand_score
 
 import pandas as pd
 
@@ -55,7 +56,7 @@ class TopicsScript:
             logging.info('STORY %s %s', cluster_id, topics[cluster_id].name().upper())
             articles = topic_news[cluster_id]
             for article in articles:
-                logging.info('%s %s', article.pub_datetime, article.text.replace('\n', ' ')[:500])
+                logging.info('%s %s %s', article.pub_datetime, article.text.replace('\n', ' ')[:500], article.id)
             # print(topics[cluster_id].topics())
             # print(topics[cluster_id].lexis_distribution())
             logging.info('###################')
@@ -70,16 +71,21 @@ class TopicsScript:
 def main():
     time_now = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
     parser = argparse.ArgumentParser(description='Run topics matching')
-    parser.add_argument('-i', '--input', type=str, default="lenta",
+    parser.add_argument('-i', '--input-type', type=str, default="lenta",
                         help='Input news source type')
-    parser.add_argument('-p', '--path', type=str, default="../src/resources/lenta_small.csv",
+    parser.add_argument('-n', '--news-path', type=str, default="../src/resources/lenta_small.csv",
                         help='Path to source file')
     parser.add_argument('-l', '--log-file-path', type=str,
-                        default=f"log_{time_now}.txt",
+                        default=f"topics-script-log-{time_now}.txt",
                         help='Path to log file')
+    parser.add_argument('-o', '--out-file-path', type=str,
+                        default=f"article_cluster_id.csv",
+                        help='Path to output file with cluster id added to each news for gasparetti')
     args = parser.parse_args()
     logging.getLogger()
     logging.basicConfig(filename=args.log_file_path, filemode='w', level=logging.INFO)
+    print("Log file is created: " + args.log_file_path)
+    logging.info("Output file with clusters: " + args.out_file_path)
 
     start = os.getenv('FROM_DATE', '07.12.2018')
     start = datetime.strptime(start, '%d.%m.%Y').replace(tzinfo=timezone.utc)
@@ -103,15 +109,14 @@ def main():
     lexic_result_word_num = int(os.getenv('LEXIC_RESULT_WORD_NUM', 10))
     sclale_dist = int(os.getenv("SCALE_DIST", 200))
 
-    if args.input.lower() == "lenta":
-        articles_input = LentaCsvInput(args.path)
+    if args.input_type.lower() == "lenta":
+        articles_input = LentaCsvInput(args.news_path)
         text_normalizer = SimpleTextNormalizer()
-    elif args.input.lower() == "gasparetti":
-        articles_input = NewsGasparettiInput(args.path)
+    elif args.input_type.lower() == "gasparetti":
+        articles_input = NewsGasparettiInput(args.news_path)
         text_normalizer = GasparettiTextNormalizer()
     else:
         raise Exception("Unknown articles input, it should be 'lenta' or 'gasparetti'!")
-
     params_logging_str = f"FROM_DATE: {start}\n" \
                          f"TO_DATE: {end}\n\n" \
                          f"EMBEDDING_FILE_PATH: {embedding_file_path}\n" \
@@ -139,6 +144,20 @@ def main():
                          stories_connecting_cos_threshold, story_window, lexic_result_word_num, sclale_dist))
     topic_news = processor.run(articles_input, text_normalizer)
 
+    if args.input_type.lower() == "gasparetti":
+        dict_clusters = dict()
+        for cluster_id in topic_news:
+            articles = topic_news[cluster_id]
+            for article in articles:
+                dict_clusters[article.id] = cluster_id
+
+        output_clusters = pd.DataFrame(columns=["url", "timestamp", "cluster_id", "story_id"])
+        for index, row in articles_input.df.iterrows():
+            cluster_id = dict_clusters.get(row["url"], "0")
+            output_clusters.loc[index] = [row["url"], row["timestamp"], cluster_id, row["story"]]
+        output_clusters.to_csv(args.out_file_path)
+        score = adjusted_rand_score(output_clusters["cluster_id"], output_clusters["story_id"])
+        logging.info('Adjusted rang score obtained : ' + str(score))
     # cProfile.runctx('processor.run()', globals(), locals())
 
 
