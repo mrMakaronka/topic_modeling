@@ -3,7 +3,7 @@ from typing import List, Callable
 from com.expleague.media_space.article import Article
 from com.expleague.media_space.topics.clustering import NewsClustering, StoriesClustering
 from com.expleague.media_space.topics.embedding2topics import Embedding2TopicsClustering
-from com.expleague.media_space.topics.embedding_model import FastTextModel
+from com.expleague.media_space.topics.embedding_model import FastTextModel, TextNormalizer
 from com.expleague.media_space.topics.items import NewsItem, StoryItem
 from com.expleague.media_space.topics.params import ProcessingParams
 from com.expleague.media_space.topics.state_handler import StateHandler
@@ -13,10 +13,10 @@ from com.expleague.media_space.topics.vec_doc import VecDoc
 
 
 class ProcessingManager:
-    def __init__(self, params: ProcessingParams, state_handler: StateHandler):
+    def __init__(self, params: ProcessingParams, state_handler: StateHandler, text_normalizer: TextNormalizer):
         self.params = params
         self.state_handler = state_handler
-        self.embedding_model = FastTextModel(params.embedding_file_path, params.idf_file_path)
+        self.embedding_model = FastTextModel(params.embedding_file_path, params.idf_file_path, text_normalizer)
 
         topics_matching = TopicsMatching(params.topics_matching_file_path)
         topics_labeller = EmbeddingTopicsLabeller()

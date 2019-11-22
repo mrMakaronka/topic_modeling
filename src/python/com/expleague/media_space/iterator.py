@@ -20,6 +20,25 @@ class ArticlesIterator:
         pass
 
 
+class GasparettiCsvIterator(ArticlesIterator):
+    def __init__(self, df: DataFrame, start: datetime, end: datetime, limit: int):
+        self.limit = limit
+        self.end = end
+        self.start = start
+        self.df = df
+
+    def __iter__(self):
+        self.iter = self.df[
+            (self.df.date >= self.start.strftime("%Y/%m/%d")) & (
+                    self.df.date < self.end.strftime("%Y/%m/%d"))].iterrows()
+        return self
+
+    def __next__(self) -> Article:
+        for row in self.iter:
+            return Article(row[1]['url'], row[1]['url'], row[1]['text'], row[1]['date'], row[1]['title'])
+        raise StopIteration
+
+
 class LentaCsvIterator(ArticlesIterator):
     def __init__(self, df: DataFrame, start: datetime, end: datetime, limit: int):
         self.limit = limit

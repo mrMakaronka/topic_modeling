@@ -27,10 +27,10 @@ class StateHandler:
 
 
 class InMemStateHandler(StateHandler):
-    def __init__(self, story_window: int, stories_connecting_cos_threshold: float):
+    def __init__(self, story_window: int, stories_connecting_cos_threshold: float, number_of_clusters: int):
         self.story_window = story_window
         self.stories_connecting_cos_threshold = stories_connecting_cos_threshold
-
+        self.number_of_clusters = number_of_clusters
         self.stories_cache = {}
         self.stories_indices = {}
 
@@ -82,11 +82,12 @@ class InMemStateHandler(StateHandler):
 
         for k, v in self.stories_cache.items():
             if len(v) > 0:
-                index = faiss.IndexFlatIP(172)  # fixme
-                vecs = np.zeros((len(v), 172), dtype=np.float32)  # fixme
+                index = faiss.IndexFlatIP(self.number_of_clusters)
+                vecs = np.zeros((len(v), self.number_of_clusters), dtype=np.float32)
                 i = 0
                 for story in v:
-                    vecs[i] = story.vec_sum / story.vec_num
+                    if not np.isnan(np.min(story.vec_sum)) and story.vec_num != 0:
+                        vecs[i] = story.vec_sum / story.vec_num
                     i += 1
                 # noinspection PyArgumentList
                 index.add(normalize(vecs, axis=1, norm='l2'))

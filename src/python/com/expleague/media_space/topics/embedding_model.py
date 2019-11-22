@@ -32,6 +32,25 @@ class SimpleTextNormalizer(TextNormalizer):
             yield re.sub(self.pattern, ' ', s).split(' ')
 
 
+class GasparettiTextNormalizer(TextNormalizer):
+    def __init__(self):
+        self.pattern = re.compile(r'\s+')
+        self.punctuation = ['!', '\"', '&', '(', ')', '[', ']', ',', '.', '?', '{', '}', ':']
+        self.translate_quotes = dict([(ord(x), ord(y)) for x, y in zip(u"‘’´“”–-", u"'''\"\"--")])
+
+    def normalized_sentences(self, text: str):
+        text = emoji.get_emoji_regexp().sub(r'.', text)
+        text = text.replace('?', '.').replace('!', '.').replace('/', ' ')
+        text_translated = text.translate(self.translate_quotes)
+        sentences = text_translated.split('.')
+        for s in sentences:
+            s = s.strip().lower().replace('\n', ' ').replace('\t', ' ')
+            s = s.translate(str.maketrans({key: None for key in self.punctuation}))
+            s_norm = [re.sub('^[^a-zA-Z0-9]*|[^a-zA-Z0-9]*$', '', word)
+                      for word in re.sub(self.pattern, ' ', s).split(' ')]
+            yield s_norm
+
+
 class EmbeddingModel:
     @abstractmethod
     def word2vec(self, word: str) -> Optional[np.ndarray]:
@@ -102,9 +121,9 @@ class FastTextModel(EmbeddingModel):
             return None
         return embedding
 
-    def __init__(self, file_path, idf_path):
+    def __init__(self, file_path, idf_path, text_normalizer):
         self.embeddings, self.words = FileReadUtil.load_fasttext(file_path)
-        self.text_normalizer = SimpleTextNormalizer()
+        self.text_normalizer = text_normalizer
         idf = FileReadUtil.load_idf(idf_path)
         self.embeddings = self.embeddings * idf[:, None]
         self.words_to_index = defaultdict(lambda: -1)

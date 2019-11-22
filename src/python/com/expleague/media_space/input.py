@@ -11,7 +11,8 @@ from com.expleague.media_space.iterator import (
     RedisLoadIterator,
     DiskCacheLoadIterator,
     DiskCacheSaveIterator,
-    LentaCsvIterator)
+    LentaCsvIterator,
+    GasparettiCsvIterator)
 
 
 class ArticlesInput:
@@ -27,6 +28,19 @@ class LentaCsvInput(ArticlesInput):
 
     def iterator(self, start: datetime, end: datetime, limit: int = -1) -> ArticlesIterator:
         return LentaCsvIterator(self.df, start, end, limit)
+
+
+class NewsGasparettiInput(ArticlesInput):
+    def __init__(self, file_path):
+        df = pd.read_csv(file_path)
+        self.df = df[df['timestamp'].str.isnumeric() & df['text'].notnull()]
+
+        def convert_epoch(ts):
+            return datetime.utcfromtimestamp(int(ts) / 1000).strftime('%Y/%m/%d')
+        self.df['date'] = self.df['timestamp'].apply(convert_epoch)
+
+    def iterator(self, start: datetime, end: datetime, limit: int = -1) -> ArticlesIterator:
+        return GasparettiCsvIterator(self.df, start, end, limit)
 
 
 class CachedInput(ArticlesInput):
