@@ -2,11 +2,14 @@ import logging
 import argparse
 import os
 import time
-from collections import defaultdict
-from datetime import datetime, timezone
-from sklearn.metrics.cluster import adjusted_rand_score
+import yaml
 
 import pandas as pd
+
+from collections import defaultdict, namedtuple
+from datetime import datetime, timezone
+from sklearn.metrics.cluster import adjusted_rand_score
+from enum import Enum
 
 from com.expleague.media_space.input import LentaCsvInput, NewsGasparettiInput
 from com.expleague.media_space.article import Article
@@ -14,6 +17,13 @@ from com.expleague.media_space.topics.params import ProcessingParams, StartupPar
 from com.expleague.media_space.topics.processing_manager import NewsItem, ProcessingManager
 from com.expleague.media_space.topics.state_handler import InMemStateHandler
 from com.expleague.media_space.topics.embedding_model import SimpleTextNormalizer, GasparettiTextNormalizer
+
+InputInfo = namedtuple('InputInfo', ['input', 'normalizer'])
+
+
+class InputType(Enum):
+    lenta = InputInfo(LentaCsvInput, SimpleTextNormalizer)
+    gasparetti = InputInfo(NewsGasparettiInput, GasparettiTextNormalizer)
 
 
 class TopicsScript:
@@ -65,6 +75,14 @@ class TopicsScript:
             if it == limit:
                 break
         return topic_news
+
+
+def read_config(path_to_config):
+    with open(path_to_config) as file:
+        # The FullLoader parameter handles the conversion from YAML
+        # scalar values to Python the dictionary format
+        config = yaml.load(file, Loader=yaml.FullLoader)
+    return config
 
 
 # noinspection PyArgumentList
@@ -151,13 +169,14 @@ def main():
             for article in articles:
                 dict_clusters[article.id] = cluster_id
 
-        output_clusters = pd.DataFrame(columns=["url", "timestamp", "cluster_id", "story_id"])
+        output_clusters = pd.DataFrame(columns=["url", "timestamp", "story_id_predicted", "story_id"])
         for index, row in articles_input.df.iterrows():
             cluster_id = dict_clusters.get(row["url"], "0")
             output_clusters.loc[index] = [row["url"], row["timestamp"], cluster_id, row["story"]]
         output_clusters.to_csv(args.out_file_path)
         score = adjusted_rand_score(output_clusters["cluster_id"], output_clusters["story_id"])
         logging.info('Adjusted rang score obtained : ' + str(score))
+
     # cProfile.runctx('processor.run()', globals(), locals())
 
 

@@ -32,8 +32,7 @@ class LentaCsvInput(ArticlesInput):
 
 class NewsGasparettiInput(ArticlesInput):
     def __init__(self, file_path):
-        df = pd.read_csv(file_path)
-        self.df = df[df['timestamp'].str.isnumeric() & df['text'].notnull()]
+        self.df = pd.read_csv(file_path)
 
         def convert_epoch(ts):
             return datetime.utcfromtimestamp(int(ts) / 1000).strftime('%Y/%m/%d')
