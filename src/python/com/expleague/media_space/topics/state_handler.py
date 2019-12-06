@@ -56,8 +56,7 @@ class InMemStateHandler(StateHandler):
         self.inserted_stories.add(story)
 
     def commit(self):
-        logging.info('Start committing')
-
+        # logging.info('Start committing')
         # TODO: investigate how this change affects result
         # remove single news-story clusters
         # for news_item in list(self.inserted_news):
