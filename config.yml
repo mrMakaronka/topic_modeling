@@ -1,0 +1,23 @@
+input_type: lenta
+
+news_file_path: ../src/resources/lenta_small.csv
+embedding_file_path: lenta.vec
+idf_file_path: idf.txt
+cluster_centroids_file_path: cluster_centroids.txt
+cluster_names_file_path: cluster_names.txt
+topics_matching_file_path: topics_matching.txt
+
+min_sentence_len: 3
+topic_cos_threshold: 0.5
+news_clustering_threshold: 0.025
+news_clustering_min_cluster_size: 4
+stories_clustering_threshold: 0.25
+stories_clustering_min_cluster_size: 2
+ngrams_for_topics_labelling: 3
+stories_connecting_cos_threshold: 0.9
+story_window: 3
+lexic_result_word_num: 10
+sclale_dist: 200
+
+start: '07.12.2018'
+end: '15.12.2018'

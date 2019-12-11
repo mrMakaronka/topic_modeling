@@ -5,10 +5,10 @@ import time
 import yaml
 
 import pandas as pd
+import json
 
 from collections import defaultdict, namedtuple
 from datetime import datetime, timezone
-from sklearn.metrics.cluster import adjusted_rand_score
 from enum import Enum
 
 from com.expleague.media_space.input import LentaCsvInput, NewsGasparettiInput
@@ -18,7 +18,7 @@ from com.expleague.media_space.topics.processing_manager import NewsItem, Proces
 from com.expleague.media_space.topics.state_handler import InMemStateHandler
 from com.expleague.media_space.topics.embedding_model import SimpleTextNormalizer, GasparettiTextNormalizer
 
-InputInfo = namedtuple('InputInfo', ['input', 'normalizer'])
+InputInfo = namedtuple('InputInfo', ['input', 'text_normalizer'])
 
 
 class InputType(Enum):
@@ -93,10 +93,8 @@ def read_config(path_to_config):
 def main():
     time_now = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
     parser = argparse.ArgumentParser(description='Run topics matching')
-    parser.add_argument('-i', '--input-type', type=str, default="lenta",
-                        help='Input news source type')
-    parser.add_argument('-n', '--news-path', type=str, default="../src/resources/lenta_small.csv",
-                        help='Path to source file')
+    parser.add_argument('-c', '--config-path', type=str, default="../config.yml",
+                        help='Path to config file')
     parser.add_argument('-l', '--log-file-path', type=str,
                         default=f"topics-script-log-{time_now}.txt",
                         help='Path to log file')
@@ -108,64 +106,31 @@ def main():
     logging.basicConfig(filename=args.log_file_path, filemode='w', level=logging.INFO)
     print("Log file is created: " + args.log_file_path)
     logging.info("Output file with clusters: " + args.out_file_path)
+    config = read_config(args.config_path)
+    input_type = InputType[config["input_type"]].value
+    start = datetime.strptime(config["start"], '%d.%m.%Y').replace(tzinfo=timezone.utc)
+    end = datetime.strptime(config["end"], '%d.%m.%Y').replace(tzinfo=timezone.utc)
 
-    start = os.getenv('FROM_DATE', '07.12.2018')
-    start = datetime.strptime(start, '%d.%m.%Y').replace(tzinfo=timezone.utc)
-    end = os.getenv('TO_DATE', '15.12.2018')
-    end = datetime.strptime(end, '%d.%m.%Y').replace(tzinfo=timezone.utc)
-
-    embedding_file_path = os.getenv('EMBEDDING_FILE_PATH', 'lenta.vec')
-    idf_file_path = os.getenv('IDF_FILE_PATH', 'idf.txt')
-    cluster_centroids_file_path = os.getenv('CLUSTER_CENTROIDS_FILE_PATH', 'cluster_centroids.txt')
-    cluster_names_file_path = os.getenv('CLUSTER_NAMES_FILE_PATH', 'cluster_names.txt')
-    topics_matching_file_path = os.getenv('TOPICS_MATCHING_FILE_PATH', 'topics_matching.txt')
-    min_sentence_len = int(os.getenv('MIN_SENTENCE_LEN', 3))
-    topic_cos_threshold = float(os.getenv('TOPIC_COS_THRESHOLD', 0.5))
-    news_clustering_threshold = float(os.getenv('NEWS_CLUSTERING_THRESHOLD', 0.025))
-    news_clustering_min_cluster_size = int(os.getenv('NEWS_CLUSTERING_MIN_CLUSTER_SIZE', 4))
-    stories_clustering_threshold = float(os.getenv('STORIES_CLUSTERING_THRESHOLD', 0.25))
-    stories_clustering_min_cluster_size = int(os.getenv('STORIES_CLUSTERING_MIN_CLUSTER_SIZE', 2))
-    ngrams_for_topics_labelling = int(os.getenv('NGRAMS_FOR_TOPICS_LABELLING', 3))
-    stories_connecting_cos_threshold = float(os.getenv('STORIES_CONNECTING_COS_THRESHOLD', 0.9))
-    story_window = int(os.getenv('STORY_WINDOW', 3))
-    lexic_result_word_num = int(os.getenv('LEXIC_RESULT_WORD_NUM', 10))
-    sclale_dist = int(os.getenv("SCALE_DIST", 200))
-
-    if args.input_type.lower() == "lenta":
-        articles_input = LentaCsvInput(args.news_path)
-        text_normalizer = SimpleTextNormalizer()
-    elif args.input_type.lower() == "gasparetti":
-        articles_input = NewsGasparettiInput(args.news_path)
-        text_normalizer = GasparettiTextNormalizer()
-    else:
-        raise Exception("Unknown articles input, it should be 'lenta' or 'gasparetti'!")
-    params_logging_str = f"FROM_DATE: {start}\n" \
-        f"TO_DATE: {end}\n\n" \
-        f"EMBEDDING_FILE_PATH: {embedding_file_path}\n" \
-        f"IDF_FILE_PATH: {idf_file_path}\n" \
-        f"CLUSTER_CENTROIDS_FILE_PATH: {cluster_centroids_file_path}\n\n" \
-        f"MIN_SENTENCE_LEN: {min_sentence_len}\n" \
-        f"TOPIC_COS_THRESHOLD: {topic_cos_threshold}\n" \
-        f"NEWS_CLUSTERING_THRESHOLD: {news_clustering_threshold}\n" \
-        f"NEWS_CLUSTERING_MIN_CLUSTER_SIZE: {news_clustering_min_cluster_size}\n" \
-        f"STORIES_CLUSTERING_THRESHOLD: {stories_clustering_threshold}\n" \
-        f"STORIES_CLUSTERING_MIN_CLUSTER_SIZE: {stories_clustering_min_cluster_size}\n" \
-        f"NGRAMS_FOR_TOPICS_LABELLING: {ngrams_for_topics_labelling}\n" \
-        f"STORIES_CONNECTING_COS_THRESHOLD: {stories_connecting_cos_threshold}\n" \
-        f"STORY_WINDOW: {story_window}\n" \
-        f"LEXIC_RESULT_WORD_NUM: {lexic_result_word_num}\n" \
-        f"SCALE_DIST: {sclale_dist}\n"
-    logging.info('Parameters used:\n' + params_logging_str)
+    logging.info('Parameters used:\n' + json.dumps(config, indent=4, sort_keys=True))
     processor = TopicsScript(
         StartupParams(start, end),
-        ProcessingParams(embedding_file_path, idf_file_path, cluster_centroids_file_path,
-                         cluster_names_file_path, topics_matching_file_path, min_sentence_len,
-                         topic_cos_threshold,
-                         news_clustering_threshold,
-                         news_clustering_min_cluster_size, stories_clustering_threshold,
-                         stories_clustering_min_cluster_size, ngrams_for_topics_labelling,
-                         stories_connecting_cos_threshold, story_window, lexic_result_word_num, sclale_dist))
-    topic_news = processor.run(articles_input, text_normalizer)
+        ProcessingParams(config["embedding_file_path"],
+                         config["idf_file_path"],
+                         config["cluster_centroids_file_path"],
+                         config["cluster_names_file_path"],
+                         config["topics_matching_file_path"],
+                         config["min_sentence_len"],
+                         config["topic_cos_threshold"],
+                         config["news_clustering_threshold"],
+                         config["news_clustering_min_cluster_size"],
+                         config["stories_clustering_threshold"],
+                         config["stories_clustering_min_cluster_size"],
+                         config["ngrams_for_topics_labelling"],
+                         config["stories_connecting_cos_threshold"],
+                         config["story_window"],
+                         config["lexic_result_word_num"],
+                         config["sclale_dist"]))
+    topic_news = processor.run(input_type.input(config["news_file_path"]), input_type.text_normalizer())
     dict_clusters = dict()
     for cluster_id in topic_news:
         articles = topic_news[cluster_id]
@@ -173,7 +138,7 @@ def main():
             dict_clusters[article.id] = cluster_id
 
     output_clusters = pd.DataFrame(columns=["url", "timestamp", "story_id_predicted"])
-    for index, row in articles_input.df.iterrows():
+    for index, row in input_type.input(config["news_file_path"]).df.iterrows():
         cluster_id = dict_clusters.get(row["url"], "0")
         output_clusters.loc[index] = [row["url"], row["timestamp"], cluster_id]
     output_clusters.to_csv(args.out_file_path)
