@@ -137,11 +137,11 @@ def main():
         for article in articles:
             dict_clusters[article.id] = cluster_id
 
-    output_clusters = pd.DataFrame(columns=["url", "timestamp", "story_id_predicted"])
+    output_clusters = pd.DataFrame(columns=["url", "story_id_predicted"])
     for index, row in input_type.input(config["news_file_path"]).df.iterrows():
         cluster_id = dict_clusters.get(row["url"], "0")
-        output_clusters.loc[index] = [row["url"], row["timestamp"], cluster_id]
-    output_clusters.to_csv(args.out_file_path)
+        output_clusters.loc[index] = [row["url"], cluster_id]
+    output_clusters.to_csv(args.out_file_path, index=False)
     # cProfile.runctx('processor.run()', globals(), locals())
 
 
