@@ -68,7 +68,6 @@ class TopicsScript:
         if verbose:
             for cluster_id in sorted(topic_news, key=lambda k: len(topic_news[k]), reverse=True):
                 names = processing_manager.news_clustering.embedding2topics.names
-                print(len(topics[cluster_id].topics_vec()))
                 vec_base_names = [(n, val) for n, val in zip(names, topics[cluster_id].topics_vec())]
                 logging.info('STORY %s %s %s',
                              cluster_id,
