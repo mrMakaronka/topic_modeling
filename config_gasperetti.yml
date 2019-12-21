@@ -1,0 +1,24 @@
+input_type: gasparetti
+
+news_file_path: ../src/resources/gasparetti_small.csv
+embedding_file_path: lenta.vec
+idf_file_path: idf.txt
+cluster_centroids_file_path: cluster_centroids.txt
+cluster_names_file_path: cluster_names.txt
+topics_matching_file_path: topics_matching.txt
+
+min_sentence_len: 5
+topic_cos_threshold: 0.4
+news_clustering_threshold: 0.7
+news_clustering_min_cluster_size: 2
+stories_clustering_threshold: 0.3
+stories_clustering_min_cluster_size: 3
+ngrams_for_topics_labelling: 3
+stories_connecting_cos_threshold: 0.8
+story_window: 4
+lexic_result_word_num: 5
+sclale_dist: 500
+
+start: '10.03.2014'
+end: '26.03.2014'
+# end: '28.08.2014'

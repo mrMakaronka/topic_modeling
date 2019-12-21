@@ -24,10 +24,12 @@ class ProcessingManager:
                                                       params.cluster_names_file_path,
                                                       params.topic_cos_threshold,
                                                       params.scale_dist)
-        self.news_clustering = NewsClustering(params.news_clustering_threshold, params.news_clustering_min_cluster_size,
+        self.news_clustering = NewsClustering(params.news_clustering_threshold,
+                                              params.news_clustering_min_cluster_size,
                                               embedding2topics, topics_labeller)
         self.story_clustering = StoriesClustering(params.stories_clustering_threshold,
-                                                  params.stories_clustering_min_cluster_size, topics_matching,
+                                                  params.stories_clustering_min_cluster_size,
+                                                  topics_matching,
                                                   topics_labeller,
                                                   self.embedding_model, params.lexic_result_word_num)
 
@@ -46,9 +48,8 @@ class ProcessingManager:
                 if update:
                     self.state_handler.insert_news(
                         NewsItem(news_item.id(), news_item.name(), news_item.date(), news_item.story(),
-                                 news_item.vec_sum + doc.embedding(), news_item.vec_num + 1,
-                                 news_item.topics))
-                callback(doc.article(), news_item)
+                                 news_item.vec_sum + doc.embedding(), news_item.vec_num + 1, news_item.topics))
+                # callback(doc.article(), news_item)
             else:
                 docs_for_clustering.append(doc)
 
@@ -59,8 +60,7 @@ class ProcessingManager:
             if story is not None:
                 if story.date() != news_cluster.date():
                     story = StoryItem(story.id(), story.name(), news_cluster.date(), story.topics(),
-                                      story.lexis_distribution(),
-                                      story.vec_sum + news_cluster.topics_vec(),
+                                      story.lexis_distribution(), story.vec_sum + news_cluster.topics_vec(),
                                       story.vec_num + len(news_cluster.docs()))
                     if update:
                         self.state_handler.insert_story(story)
@@ -84,7 +84,6 @@ class ProcessingManager:
                     self.state_handler.insert_news(news_cluster)
                 for doc in news_cluster.docs():
                     callback(doc.article(), news_cluster)
-            del story_cluster.clusters
-
+            # del story_cluster.clusters
         if update:
             self.state_handler.commit()

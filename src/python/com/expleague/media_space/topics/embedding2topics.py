@@ -36,12 +36,15 @@ class Embedding2TopicsClustering(Embedding2Topics):
                 lims, dist, ind = self.index.range_search(norm_embedding, self.threshold)
                 if len(ind) == 0:
                     continue
-                result_vec[ind] += (1 / len(ind))
+                result_vec[ind] += 1 / len(ind)
             else:
                 # noinspection PyArgumentList
                 dist, ind = self.index.search(norm_embedding, 2)
                 np_sum = np.sum(np.exp(-self.scale_dist * dist))
-                dist = np.exp(-self.scale_dist * dist) / np_sum
+                if np_sum != 0:
+                    dist = np.exp(-self.scale_dist * dist) / np_sum
+                else:
+                    dist = 0
                 result_vec[ind] = dist
 
         if np.count_nonzero(result_vec) == 0:

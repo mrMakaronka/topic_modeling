@@ -36,7 +36,8 @@ class TopicsScript:
             number_of_clusters = int(f.readline())
 
         state_handler = InMemStateHandler(self.processing_params.story_window,
-                                          self.processing_params.stories_connecting_cos_threshold, number_of_clusters)
+                                          self.processing_params.stories_connecting_cos_threshold,
+                                          number_of_clusters)
         processing_manager = ProcessingManager(self.processing_params, state_handler, text_normalizer)
         ranges = pd.date_range(self.startup_params.start, self.startup_params.end, freq='1D')
         topic_news = defaultdict(list)
@@ -65,19 +66,21 @@ class TopicsScript:
                 logging.info('End processing. Total: %s sec', time.time() - start_time)
 
         if verbose:
-            limit = 1000
-            it = 0
             for cluster_id in sorted(topic_news, key=lambda k: len(topic_news[k]), reverse=True):
-                logging.info('STORY %s %s', cluster_id, topics[cluster_id].name().upper())
+                names = processing_manager.news_clustering.embedding2topics.names
+                print(len(topics[cluster_id].topics_vec()))
+                vec_base_names = [(n, val) for n, val in zip(names, topics[cluster_id].topics_vec())]
+                logging.info('STORY %s %s %s',
+                             cluster_id,
+                             topics[cluster_id].name().upper(),
+                             vec_base_names)
+
                 articles = topic_news[cluster_id]
                 for article in articles:
-                    logging.info('%s %s %s', article.pub_datetime, article.text.replace('\n', ' ')[:500], article.id)
+                    logging.info('%s %s %s', article.pub_datetime, article.text.replace('\n', ' ')[:700], article.id)
 
                 logging.info('###################')
 
-                it += 1
-                if it == limit:
-                    break
         return topic_news
 
 
@@ -93,7 +96,7 @@ def read_config(path_to_config):
 def main():
     time_now = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
     parser = argparse.ArgumentParser(description='Run topics matching')
-    parser.add_argument('-c', '--config-path', type=str, default="../config.yml",
+    parser.add_argument('-c', '--config-path', type=str, default="../config_lenta.yml",
                         help='Path to config file')
     parser.add_argument('-l', '--log-file-path', type=str,
                         default=f"topics-script-log-{time_now}.txt",

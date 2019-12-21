@@ -69,7 +69,7 @@ class VecDoc:
             return
 
         title_vecs, title_words = self._text2embedding(self.doc_article.title)
-        title_vec = np.sum(title_vecs, axis=0, dtype=np.float32) / len(title_vecs)
+        title_vec = np.sum(title_vecs, axis=0, dtype=np.float32) / len(title_vecs) if len(title_vecs) != 0 else 0
         if np.count_nonzero(title_vec) == 0:
             return
 
