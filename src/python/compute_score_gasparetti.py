@@ -13,7 +13,7 @@ from com.expleague.media_space.input import NewsGasparettiInput
 from com.expleague.media_space.topics.params import ProcessingParams, StartupParams
 from com.expleague.media_space.topics.embedding_model import GasparettiTextNormalizer
 
-DATA_DIR = os.environ.get("DATA_DIR_TM", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATA_DIR = os.environ.get("DATA_DIR_TM", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 MODELS_DIR = os.path.join(DATA_DIR, "models", "gasparetti")
 
 
@@ -138,7 +138,7 @@ def compute_score_topic_modeling(score_cmp=None,
 if __name__ == "__main__":
     time_now = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
     parser = argparse.ArgumentParser(description='Run topics matching')
-    parser.add_argument('-i', '--input', type=str, default=os.path.join(DATA_DIR, "resources", "gasparetti_small.csv"),
+    parser.add_argument('-i', '--input', type=str, default=os.path.join(DATA_DIR, "src", "resources", "gasparetti_small.csv"),
                         help='Input news source')
     parser.add_argument('-l', '--log-file', type=str,
                         default=f"topics-script-log-{time_now}.txt",
