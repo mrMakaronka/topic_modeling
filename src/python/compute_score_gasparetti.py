@@ -168,4 +168,4 @@ if __name__ == "__main__":
             lexic_result_word_num=5,
             sclale_dist=500,
             input_file_path=input_file_path,
-            verbose=False)
+            verbose=True)
