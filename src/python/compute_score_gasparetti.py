@@ -12,6 +12,7 @@ from com.expleague.media_space.topics_script import TopicsScript
 from com.expleague.media_space.input import NewsGasparettiInput
 from com.expleague.media_space.topics.params import ProcessingParams, StartupParams
 from com.expleague.media_space.topics.embedding_model import GasparettiTextNormalizer
+from com.expleague.media_space.topics.file_read_util import FileReadUtil
 
 DATA_DIR = os.environ.get("DATA_DIR_TM", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 MODELS_DIR = os.path.join(DATA_DIR, "models", "gasparetti")
@@ -119,16 +120,31 @@ def compute_score_topic_modeling(score_cmp=None,
                          news_clustering_min_cluster_size, stories_clustering_threshold,
                          stories_clustering_min_cluster_size, ngrams_for_topics_labelling,
                          stories_connecting_cos_threshold, story_window, lexic_result_word_num, sclale_dist))
-    topic_news = processor.run(articles_input, text_normalizer, verbose=verbose)
+    topic_news, news_items = processor.run(articles_input, text_normalizer, verbose=verbose)
+    names = FileReadUtil.load_clusters_names(cluster_names_file_path)
     dict_clusters = dict()
+    vec_news = dict()
     for cluster_id in topic_news:
         articles = topic_news[cluster_id]
         for article in articles:
-            dict_clusters[article.id] = cluster_id
+            dict_clusters[article.publisher] = cluster_id
+
+    # for article in articles_processed:
+    #     vec_base_names_n = [(n, abs(val))
+    #                         for n, val in zip(names, article.topics_vec())]
+    #     vec_base_names_n.sort(key=lambda x: x[1], reverse=True)
+    #     vec_news[article.publisher] = vec_base_names_n
 
     output_clusters = pd.DataFrame(columns=["url", "timestamp", "story_id_predicted", "story_id"])
     for index, row in articles_input.df.iterrows():
         cluster_id = dict_clusters.get(row["url"], "0")
+
+        def convert_epoch(ts):
+            return datetime.datetime.utcfromtimestamp(int(ts) / 1000).strftime('%Y/%m/%d')
+
+        logging.info(f'\n################################################')
+        logging.info('%s %s %s \n%s', convert_epoch(row["timestamp"]), row["story"], "news not in any cluster:",
+                     row["text"])
         output_clusters.loc[index] = [row["url"], row["timestamp"], cluster_id, row["story"]]
     if score_cmp:
         score = score_cmp.compute_score(output_clusters["story_id_predicted"].to_list())
@@ -138,7 +154,8 @@ def compute_score_topic_modeling(score_cmp=None,
 if __name__ == "__main__":
     time_now = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
     parser = argparse.ArgumentParser(description='Run topics matching')
-    parser.add_argument('-i', '--input', type=str, default=os.path.join(DATA_DIR, "src", "resources", "gasparetti_small.csv"),
+    parser.add_argument('-i', '--input', type=str, default=os.path.join(DATA_DIR, "src", "resources",
+                                                                        "gasparetti_small.csv"),
                         help='Input news source')
     parser.add_argument('-l', '--log-file', type=str,
                         default=f"topics-script-log-{time_now}.txt",
@@ -154,18 +171,29 @@ if __name__ == "__main__":
     num_topics = len(set(clusters))
     logging.info("Number of topics initially: " + str(num_topics))
 
-    for topic_cos_threshold in [0.4]:
+    for (topic_cos_threshold,
+         news_clustering_threshold,
+         min_sentence_len,
+         news_clustering_min_cluster_size,
+         stories_clustering_min_cluster_size,
+         stories_connecting_cos_threshold) in ((0.2, 0.4, 2, 10, 10, 0.6),
+                                               (0.5, 0.5, 4, 20, 20, 0.8),
+                                               (0.5, 0.5, 4, 4, 3, 0.6),
+                                               ):
         compute_score_topic_modeling(
             score_cmp=score_computer,
-            min_sentence_len=5,
+            min_sentence_len=min_sentence_len,
             topic_cos_threshold=topic_cos_threshold,
-            news_clustering_threshold=0.7,
-            news_clustering_min_cluster_size=2,
-            stories_clustering_threshold=0.3,
-            stories_clustering_min_cluster_size=4,
-            stories_connecting_cos_threshold=0.8,
-            story_window=4,
+            news_clustering_threshold=news_clustering_threshold,
+            news_clustering_min_cluster_size=news_clustering_min_cluster_size,
+            stories_clustering_threshold=0.2,
+            stories_clustering_min_cluster_size=2,
+            stories_connecting_cos_threshold=stories_connecting_cos_threshold,
+            story_window=3,
             lexic_result_word_num=5,
-            sclale_dist=500,
+            sclale_dist=1000,
             input_file_path=input_file_path,
-            verbose=True)
+            verbose=True,
+            start='10.03.2014',
+            end='20.03.2014'
+        )

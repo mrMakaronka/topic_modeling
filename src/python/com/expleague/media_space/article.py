@@ -9,6 +9,7 @@ class Article:
     text: str
     pub_datetime: str
     title: str
+    story_id: str
 
 
 @dataclass

@@ -42,6 +42,8 @@ class TopicsScript:
         ranges = pd.date_range(self.startup_params.start, self.startup_params.end, freq='1D')
         topic_news = defaultdict(list)
         topics = {}
+        news_items = {}
+        articles_processed = []
         for i in range(len(ranges) - 1):
             if verbose:
                 logging.info('Day %d/%d: %s-%s', i + 1, len(ranges) - 1, str(ranges[i]), str(ranges[i + 1]))
@@ -57,6 +59,7 @@ class TopicsScript:
             def processed_callback(processed: Article, item: NewsItem):
                 topic_news[item.story().id()].append(processed)
                 topics[item.story().id()] = item.story()
+                news_items[processed.id] = item
 
             if verbose:
                 logging.info('Start processing...')
@@ -66,9 +69,11 @@ class TopicsScript:
                 logging.info('End processing. Total: %s sec', time.time() - start_time)
 
         if verbose:
-            for cluster_id in sorted(topic_news, key=lambda k: len(topic_news[k]), reverse=True):
+            for i, cluster_id in enumerate(sorted(topic_news, key=lambda k: len(topic_news[k]), reverse=True)):
                 names = processing_manager.news_clustering.embedding2topics.names
-                vec_base_names = [(n, val) for n, val in zip(names, topics[cluster_id].topics_vec())]
+                vec_base_names = [(n, abs(val))
+                                  for n, val in zip(names, topics[cluster_id].topics_vec())]
+                vec_base_names.sort(key=lambda x: x[1], reverse=True)
                 logging.info('STORY %s %s %s',
                              cluster_id,
                              topics[cluster_id].name().upper(),
@@ -76,11 +81,20 @@ class TopicsScript:
 
                 articles = topic_news[cluster_id]
                 for article in articles:
-                    logging.info('%s %s %s', article.pub_datetime, article.text.replace('\n', ' ')[:700], article.id)
+                    # vector_in_base_space = [(n, val) for n, val in zip(names, article.vec_sum)]
+                    vec_base_names_n = [(n, abs(val))
+                                        for n, val in zip(names, news_items[article.id].topics_vec())]
+                    vec_base_names_n.sort(key=lambda x: x[1], reverse=True)
+                    logging.info('%s %s %s %s \n%s',
+                                 article.pub_datetime,
+                                 article.story_id,
+                                 article.publisher,
+                                 vec_base_names_n,
+                                 article.text.replace('\n', ' ')[:2000])
+                    # logging.info('%s %s %s', article.id, article.pub_datetime, vector_in_base_space)
+                logging.info(f'\n###################-----STORY-№{i}--#############################')
 
-                logging.info('###################')
-
-        return topic_news
+        return topic_news, news_items
 
 
 def read_config(path_to_config):

@@ -35,7 +35,8 @@ class GasparettiCsvIterator(ArticlesIterator):
 
     def __next__(self) -> Article:
         for row in self.iter:
-            return Article(row[1]['url'], row[1]['url'], row[1]['text'], row[1]['date'], row[1]['title'])
+            return Article(row[1]['url'], row[1]['url'], row[1]['text'],
+                           row[1]['date'], row[1]['title'], row[1]['story'])
         raise StopIteration
 
 
@@ -54,7 +55,7 @@ class LentaCsvIterator(ArticlesIterator):
 
     def __next__(self) -> Article:
         for row in self.iter:
-            return Article(row[1]['url'], row[1]['url'], row[1]['text'], row[1]['date'], row[1]['title'])
+            return Article(row[1]['url'], row[1]['url'], row[1]['text'], row[1]['date'], row[1]['title'], "")
         raise StopIteration
 
 
