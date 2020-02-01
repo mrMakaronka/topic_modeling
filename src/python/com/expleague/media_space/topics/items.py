@@ -46,7 +46,7 @@ class StoryItem:
 
     def topics_vec(self) -> np.ndarray:
         vec = self.vec_sum / self.vec_num
-        return vec / np.linalg.norm(vec, ord=1)
+        return vec
 
     def state(self) -> StoryState:
         # noinspection PyTypeChecker
@@ -103,8 +103,7 @@ class NewsItem:
         return self.vec_sum / self.vec_num
 
     def topics_vec(self) -> np.ndarray:
-        vec = self.topics
-        return vec / np.linalg.norm(vec, ord=1)
+        return self.topics
 
     def state(self) -> NewsState:
         # noinspection PyTypeChecker

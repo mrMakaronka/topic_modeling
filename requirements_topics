@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:04d641b9b0468709841de122c6bff84019e6e7f5c4538018c666c6cbe893e79e
-size 250
+Flask==1.0.2
+nltk==3.3
+diskcache==3.0.6
+redis==2.10.6
+pymongo==3.7.1
+dataclasses_json==0.0.16
+mongoengine==0.15.3
+python-dateutil==2.7.3
+lru-dict==1.1.6
+pandas==0.23.4
+scikit-learn==0.20.0
+scipy==1.1.0
+numpy==1.15.4
+faiss-prebuilt==1.4
+dacite==0.0.22

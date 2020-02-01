@@ -40,7 +40,7 @@ class GasparettiTextNormalizer(TextNormalizer):
 
     def normalized_sentences(self, text: str):
         text = emoji.get_emoji_regexp().sub(r'.', text)
-        text = text.replace('?', '.').replace('!', '.').replace('/', ' ')
+        text = text.replace('?', '.').replace('!', '.').replace('/', ' ').replace('-', '').replace('_', '')
         text_translated = text.translate(self.translate_quotes)
         sentences = text_translated.split('.')
         for s in sentences:

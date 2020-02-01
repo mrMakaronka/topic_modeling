@@ -177,8 +177,8 @@ if __name__ == "__main__":
          news_clustering_min_cluster_size,
          stories_clustering_min_cluster_size,
          stories_connecting_cos_threshold) in ((0.2, 0.4, 2, 10, 10, 0.6),
-                                               (0.5, 0.5, 4, 20, 20, 0.8),
-                                               (0.5, 0.5, 4, 4, 3, 0.6),
+            # (0.5, 0.5, 4, 20, 20, 0.8),
+            # (0.5, 0.5, 4, 4, 3, 0.6),
                                                ):
         compute_score_topic_modeling(
             score_cmp=score_computer,
