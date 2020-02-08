@@ -20,20 +20,20 @@ class ProcessingManager:
 
         topics_matching = TopicsMatching(params.topics_matching_file_path)
         topics_labeller = EmbeddingTopicsLabeller()
-        embedding2topics = Embedding2TopicsClustering(params.cluster_centroids_file_path,
-                                                      params.cluster_names_file_path,
-                                                      params.topic_cos_threshold,
-                                                      params.scale_dist)
+        self.embedding2topics = Embedding2TopicsClustering(params.cluster_centroids_file_path,
+                                                           params.cluster_names_file_path,
+                                                           params.topic_cos_threshold,
+                                                           params.scale_dist)
         self.news_clustering = NewsClustering(params.news_clustering_threshold,
                                               params.news_clustering_min_cluster_size,
-                                              embedding2topics, topics_labeller)
+                                              self.embedding2topics, topics_labeller)
         self.story_clustering = StoriesClustering(params.stories_clustering_threshold,
                                                   params.stories_clustering_min_cluster_size,
                                                   topics_matching,
                                                   topics_labeller,
                                                   self.embedding_model, params.lexic_result_word_num)
 
-    def process(self, batch: List[Article], update: bool, callback: Callable[[Article, NewsItem], None]):
+    def process(self, batch: List[Article], update: bool, callback: Callable[[VecDoc, NewsItem], None]):
         vec_docs = []
         for article in batch:
             vec_docs.append(VecDoc(article, self.embedding_model, self.params.min_sentence_len))
@@ -70,7 +70,7 @@ class ProcessingManager:
                     self.state_handler.insert_news(news_cluster)
 
                 for doc in news_cluster.docs():
-                    callback(doc.article(), news_cluster)
+                    callback(doc, news_cluster)
             else:
                 news_for_clustering.append(news_cluster)
 
@@ -83,7 +83,7 @@ class ProcessingManager:
                 if update:
                     self.state_handler.insert_news(news_cluster)
                 for doc in news_cluster.docs():
-                    callback(doc.article(), news_cluster)
+                    callback(doc, news_cluster)
             # del story_cluster.clusters
         if update:
             self.state_handler.commit()

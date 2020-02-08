@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from enum import Enum
 
 from com.expleague.media_space.input import LentaCsvInput, NewsGasparettiInput
-from com.expleague.media_space.article import Article
+from com.expleague.media_space.topics.vec_doc import VecDoc
 from com.expleague.media_space.topics.params import ProcessingParams, StartupParams
 from com.expleague.media_space.topics.processing_manager import NewsItem, ProcessingManager
 from com.expleague.media_space.topics.state_handler import InMemStateHandler
@@ -42,8 +42,6 @@ class TopicsScript:
         ranges = pd.date_range(self.startup_params.start, self.startup_params.end, freq='1D')
         topic_news = defaultdict(list)
         topics = {}
-        news_items = {}
-        articles_processed = []
         for i in range(len(ranges) - 1):
             if verbose:
                 logging.info('Day %d/%d: %s-%s', i + 1, len(ranges) - 1, str(ranges[i]), str(ranges[i + 1]))
@@ -56,10 +54,9 @@ class TopicsScript:
             if verbose:
                 logging.info('End loading news. Total: %s sec', time.time() - start_time)
 
-            def processed_callback(processed: Article, item: NewsItem):
+            def processed_callback(processed: VecDoc, item: NewsItem):
                 topic_news[item.story().id()].append(processed)
                 topics[item.story().id()] = item.story()
-                news_items[processed.id] = item
 
             if verbose:
                 logging.info('Start processing...')
@@ -77,24 +74,28 @@ class TopicsScript:
                 logging.info('STORY %s %s %s',
                              cluster_id,
                              topics[cluster_id].name().upper(),
-                             vec_base_names)
+                             vec_base_names[:5])
 
-                articles = topic_news[cluster_id]
-                for article in articles:
+                docs = topic_news[cluster_id]
+                for doc in docs:
+                    article = doc.article()
                     # vector_in_base_space = [(n, val) for n, val in zip(names, article.vec_sum)]
+                    topics_vec = processing_manager.embedding2topics.convert(doc.embedding_sentences())
+                    if topics_vec is None:
+                        topics_vec = [0] * len(names)
                     vec_base_names_n = [(n, abs(val))
-                                        for n, val in zip(names, news_items[article.id].topics_vec())]
+                                        for n, val in zip(names, list(topics_vec))]
                     vec_base_names_n.sort(key=lambda x: x[1], reverse=True)
                     logging.info('%s %s %s %s \n%s',
                                  article.pub_datetime,
                                  article.story_id,
                                  article.publisher,
-                                 vec_base_names_n,
+                                 vec_base_names_n[:5],
                                  article.text.replace('\n', ' ')[:2000])
                     # logging.info('%s %s %s', article.id, article.pub_datetime, vector_in_base_space)
                 logging.info(f'\n###################-----STORY-№{i}--#############################')
 
-        return topic_news, news_items
+        return topic_news
 
 
 def read_config(path_to_config):

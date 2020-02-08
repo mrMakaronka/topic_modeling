@@ -49,7 +49,7 @@ class Embedding2TopicsClustering(Embedding2Topics):
 
         if np.count_nonzero(result_vec) == 0:
             return None
-        result_vec = result_vec / np.linalg.norm(result_vec)
+        result_vec = result_vec / np.linalg.norm(result_vec, 1)
         return result_vec
 
     def __init__(self, centroids_path: str, names_path: str, threshold: float, scale_dist: int):

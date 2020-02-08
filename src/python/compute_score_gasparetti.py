@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import scipy.optimize as optimize
 import datetime
 import os
 import argparse
@@ -22,17 +23,18 @@ class ScoreComputer:
     def __init__(self, story_ids):
         self.story_ids = story_ids
 
-    def compute_score(self, predicted_stories_list):
-        return "\n" + f"adjusted_rand_score=" \
-                      f"{str(adjusted_rand_score(self.story_ids, predicted_stories_list))}\n" \
-                      f"adjusted_mutual_info_score=" \
-                      f"{str(adjusted_mutual_info_score(self.story_ids, predicted_stories_list))}\n" \
-                      f"normalized_mutual_info_score=" \
-                      f"{str(normalized_mutual_info_score(self.story_ids, predicted_stories_list))}\n" \
-                      f"completeness_score=" \
-                      f"{str(completeness_score(self.story_ids, predicted_stories_list))}\n" \
-                      f"homogeneity_score=" \
-                      f"{str(homogeneity_score(self.story_ids, predicted_stories_list))}\n"
+    def compute_score(self, predicted_stories_list, only_in_cluster_values=True):
+        predict_list = list()
+        real_story_ids = list()
+        if only_in_cluster_values:
+            for i in range(len(self.story_ids)):
+                if predicted_stories_list[i] != "0":
+                    predict_list.append(predicted_stories_list[i])
+                    real_story_ids.append(self.story_ids[i])
+        else:
+            predict_list = predicted_stories_list
+            real_story_ids = self.story_ids
+        return adjusted_rand_score(real_story_ids, predict_list)
 
 
 def get_df_clusters_predicted(theta, url_list):
@@ -120,20 +122,14 @@ def compute_score_topic_modeling(score_cmp=None,
                          news_clustering_min_cluster_size, stories_clustering_threshold,
                          stories_clustering_min_cluster_size, ngrams_for_topics_labelling,
                          stories_connecting_cos_threshold, story_window, lexic_result_word_num, sclale_dist))
-    topic_news, news_items = processor.run(articles_input, text_normalizer, verbose=verbose)
+    topic_news = processor.run(articles_input, text_normalizer, verbose=verbose)
     names = FileReadUtil.load_clusters_names(cluster_names_file_path)
     dict_clusters = dict()
-    vec_news = dict()
     for cluster_id in topic_news:
-        articles = topic_news[cluster_id]
-        for article in articles:
+        docs = topic_news[cluster_id]
+        for doc in docs:
+            article = doc.article()
             dict_clusters[article.publisher] = cluster_id
-
-    # for article in articles_processed:
-    #     vec_base_names_n = [(n, abs(val))
-    #                         for n, val in zip(names, article.topics_vec())]
-    #     vec_base_names_n.sort(key=lambda x: x[1], reverse=True)
-    #     vec_news[article.publisher] = vec_base_names_n
 
     output_clusters = pd.DataFrame(columns=["url", "timestamp", "story_id_predicted", "story_id"])
     for index, row in articles_input.df.iterrows():
@@ -146,9 +142,11 @@ def compute_score_topic_modeling(score_cmp=None,
         logging.info('%s %s %s \n%s', convert_epoch(row["timestamp"]), row["story"], "news not in any cluster:",
                      row["text"])
         output_clusters.loc[index] = [row["url"], row["timestamp"], cluster_id, row["story"]]
+    score = None
     if score_cmp:
         score = score_cmp.compute_score(output_clusters["story_id_predicted"].to_list())
         logging.info('Score : ' + str(score) + "\n")
+    return score
 
 
 if __name__ == "__main__":
@@ -171,29 +169,56 @@ if __name__ == "__main__":
     num_topics = len(set(clusters))
     logging.info("Number of topics initially: " + str(num_topics))
 
-    for (topic_cos_threshold,
-         news_clustering_threshold,
-         min_sentence_len,
-         news_clustering_min_cluster_size,
-         stories_clustering_min_cluster_size,
-         stories_connecting_cos_threshold) in ((0.2, 0.4, 2, 10, 10, 0.6),
-            # (0.5, 0.5, 4, 20, 20, 0.8),
-            # (0.5, 0.5, 4, 4, 3, 0.6),
-                                               ):
-        compute_score_topic_modeling(
+
+    def f(params):
+        topic_cos_threshold, news_clustering_threshold, \
+        stories_clustering_threshold, stories_connecting_cos_threshold, scale_dist = params
+        scr = compute_score_topic_modeling(
             score_cmp=score_computer,
-            min_sentence_len=min_sentence_len,
+            min_sentence_len=7,
             topic_cos_threshold=topic_cos_threshold,
             news_clustering_threshold=news_clustering_threshold,
-            news_clustering_min_cluster_size=news_clustering_min_cluster_size,
-            stories_clustering_threshold=0.2,
-            stories_clustering_min_cluster_size=2,
+            news_clustering_min_cluster_size=3,
+            stories_clustering_threshold=stories_clustering_threshold,
+            stories_clustering_min_cluster_size=4,
             stories_connecting_cos_threshold=stories_connecting_cos_threshold,
-            story_window=3,
+            story_window=5,
             lexic_result_word_num=5,
-            sclale_dist=1000,
+            sclale_dist=scale_dist,
             input_file_path=input_file_path,
-            verbose=True,
+            verbose=False,
             start='10.03.2014',
-            end='20.03.2014'
-        )
+            end='25.03.2014')
+        print(scr, params)
+        return scr
+
+
+    initial_guess = np.array([0.5, 0.5, 0.5, 0.5, 200])
+    compute_score_topic_modeling(
+        score_cmp=score_computer,
+        min_sentence_len=5,
+        topic_cos_threshold=0.5,
+        news_clustering_threshold=0.6,
+        news_clustering_min_cluster_size=2,
+        stories_clustering_threshold=0.7,
+        stories_clustering_min_cluster_size=2,
+        stories_connecting_cos_threshold=0.7,
+        story_window=3,
+        lexic_result_word_num=5,
+        sclale_dist=200,
+        input_file_path=input_file_path,
+        verbose=True,
+        start='10.03.2014',
+        end='25.03.2014')
+    # bounds = ((0.2, 0.8), (0.2, 0.8), (0.2, 0.8), (100, 300))
+    # result = optimize.minimize(f,
+    #                            initial_guess,
+    #                            tol=0.1,
+    #                            method='nelder-mead',
+    #                            options={'xtol': 0.1, 'maxiter': 20},
+    #                            )
+    # if result.success:
+    #     fitted_params = result.x
+    #     print(fitted_params)
+    # else:
+    #     raise ValueError(result.message)
