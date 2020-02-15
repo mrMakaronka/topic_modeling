@@ -12,7 +12,7 @@ from sklearn.metrics.cluster import *
 from com.expleague.media_space.topics_script import TopicsScript
 from com.expleague.media_space.input import NewsGasparettiInput
 from com.expleague.media_space.topics.params import ProcessingParams, StartupParams
-from com.expleague.media_space.topics.embedding_model import GasparettiTextNormalizer
+from com.expleague.media_space.topics.embedding_model import GasparettiTextNormalizer, SimpleTextNormalizer
 from com.expleague.media_space.topics.file_read_util import FileReadUtil
 
 DATA_DIR = os.environ.get("DATA_DIR_TM", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -146,6 +146,7 @@ def compute_score_topic_modeling(score_cmp=None,
     if score_cmp:
         score = score_cmp.compute_score(output_clusters["story_id_predicted"].to_list())
         logging.info('Score : ' + str(score) + "\n")
+    output_clusters.to_csv("output_clusteres.csv")
     return score
 
 
@@ -190,26 +191,24 @@ if __name__ == "__main__":
             start='10.03.2014',
             end='25.03.2014')
         print(scr, params)
-        return scr
-
-
-    initial_guess = np.array([0.5, 0.5, 0.5, 0.5, 200])
+        return -scr
     compute_score_topic_modeling(
         score_cmp=score_computer,
-        min_sentence_len=5,
-        topic_cos_threshold=0.5,
-        news_clustering_threshold=0.6,
+        min_sentence_len=4,
+        topic_cos_threshold=0.35,
+        news_clustering_threshold=0.6213551,
         news_clustering_min_cluster_size=2,
-        stories_clustering_threshold=0.7,
+        stories_clustering_threshold=0.6615851,
         stories_clustering_min_cluster_size=2,
-        stories_connecting_cos_threshold=0.7,
+        stories_connecting_cos_threshold=1,
         story_window=3,
         lexic_result_word_num=5,
-        sclale_dist=200,
+        sclale_dist=352,
         input_file_path=input_file_path,
         verbose=True,
         start='10.03.2014',
         end='25.03.2014')
+    # initial_guess = np.array([0.36700707, 0.44813551, 0.49615851, 0.53106272, 351.94981846])
     # bounds = ((0.2, 0.8), (0.2, 0.8), (0.2, 0.8), (100, 300))
     # result = optimize.minimize(f,
     #                            initial_guess,

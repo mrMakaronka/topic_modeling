@@ -130,7 +130,7 @@ class StoriesClustering:
             name = self.topics_labeller.label(vec_docs)
 
             all_words = np.concatenate([doc.words() for l in indices for doc in news_clusters[l].docs()])
-            all_vecs = [news_clusters[l].vec_sum / np.linalg.norm(news_clusters[l].vec_sum, ord=1) for l in indices]
+            all_vecs = [news_clusters[l].vec_sum for l in indices]
             all_sentence_len = np.sum(
                 [len(doc.embedding_sentences()) for l in indices for doc in news_clusters[l].docs()])
             vec_to_search = np.sum(all_vecs, axis=0) / all_sentence_len
