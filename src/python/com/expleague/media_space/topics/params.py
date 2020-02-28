@@ -27,3 +27,4 @@ class ProcessingParams:
     story_window: int
     lexic_result_word_num: int
     scale_dist: int
+    vote_max_number: int

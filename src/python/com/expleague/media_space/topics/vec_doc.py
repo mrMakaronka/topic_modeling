@@ -85,8 +85,10 @@ class VecDoc:
         for sentence in self.embedding_model.normalizer().normalized_sentences(text):
             if len(sentence) < self.min_sentence_len:
                 continue
-            word_vecs = [(word, self.embedding_model.word2vec(word)) for word in sentence if
-                         self.embedding_model.word2vec(word) is not None]
+            word_vecs = [
+                (word, self.embedding_model.word2vec(word) / np.linalg.norm(self.embedding_model.word2vec(word)))
+                for word in sentence if
+                self.embedding_model.word2vec(word) is not None]
             if len(word_vecs) == 0:
                 continue
             words, vecs = zip(*word_vecs)

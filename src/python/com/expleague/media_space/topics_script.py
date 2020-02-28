@@ -146,7 +146,8 @@ def main():
                          config["stories_connecting_cos_threshold"],
                          config["story_window"],
                          config["lexic_result_word_num"],
-                         config["sclale_dist"]))
+                         config["sclale_dist"]),
+                         config["vote_max_number"])
     topic_news = processor.run(input_type.input(config["news_file_path"]), input_type.text_normalizer())
     dict_clusters = dict()
     for cluster_id in topic_news:

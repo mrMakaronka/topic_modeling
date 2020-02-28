@@ -81,6 +81,7 @@ def compute_score_topic_modeling(score_cmp=None,
                                  lexic_result_word_num=10,
                                  sclale_dist=100,
                                  verbose=False,
+                                 vote_max_number=5,
                                  input_file_path="gasparetti_small.csv",
                                  start='10.03.2014',
                                  end='26.03.2014'):
@@ -111,7 +112,8 @@ def compute_score_topic_modeling(score_cmp=None,
                          f"STORIES_CONNECTING_COS_THRESHOLD: {stories_connecting_cos_threshold}\n" \
                          f"STORY_WINDOW: {story_window}\n" \
                          f"LEXIC_RESULT_WORD_NUM: {lexic_result_word_num}\n" \
-                         f"SCALE_DIST: {sclale_dist}\n"
+                         f"SCALE_DIST: {sclale_dist}\n," \
+                         f"VOTE_MAX_NUMBER :{vote_max_number}"
     logging.info('Parameters used:\n' + params_logging_str)
     processor = TopicsScript(
         StartupParams(start, end),
@@ -121,7 +123,8 @@ def compute_score_topic_modeling(score_cmp=None,
                          news_clustering_threshold,
                          news_clustering_min_cluster_size, stories_clustering_threshold,
                          stories_clustering_min_cluster_size, ngrams_for_topics_labelling,
-                         stories_connecting_cos_threshold, story_window, lexic_result_word_num, sclale_dist))
+                         stories_connecting_cos_threshold, story_window, lexic_result_word_num,
+                         sclale_dist, vote_max_number))
     topic_news = processor.run(articles_input, text_normalizer, verbose=verbose)
     names = FileReadUtil.load_clusters_names(cluster_names_file_path)
     dict_clusters = dict()
@@ -173,51 +176,54 @@ if __name__ == "__main__":
 
     def f(params):
         topic_cos_threshold, news_clustering_threshold, \
-        stories_clustering_threshold, stories_connecting_cos_threshold, scale_dist = params
+        stories_clustering_threshold, stories_connecting_cos_threshold = params
         scr = compute_score_topic_modeling(
             score_cmp=score_computer,
-            min_sentence_len=7,
+            min_sentence_len=5,
             topic_cos_threshold=topic_cos_threshold,
             news_clustering_threshold=news_clustering_threshold,
-            news_clustering_min_cluster_size=3,
+            news_clustering_min_cluster_size=2,
             stories_clustering_threshold=stories_clustering_threshold,
-            stories_clustering_min_cluster_size=4,
+            stories_clustering_min_cluster_size=2,
             stories_connecting_cos_threshold=stories_connecting_cos_threshold,
             story_window=5,
             lexic_result_word_num=5,
-            sclale_dist=scale_dist,
+            sclale_dist=500,
             input_file_path=input_file_path,
             verbose=False,
+            vote_max_number=5,
             start='10.03.2014',
-            end='25.03.2014')
+            end='30.03.2014')
         print(scr, params)
         return -scr
-    compute_score_topic_modeling(
-        score_cmp=score_computer,
-        min_sentence_len=4,
-        topic_cos_threshold=0.35,
-        news_clustering_threshold=0.6213551,
-        news_clustering_min_cluster_size=2,
-        stories_clustering_threshold=0.6615851,
-        stories_clustering_min_cluster_size=2,
-        stories_connecting_cos_threshold=1,
-        story_window=3,
-        lexic_result_word_num=5,
-        sclale_dist=352,
-        input_file_path=input_file_path,
-        verbose=True,
-        start='10.03.2014',
-        end='25.03.2014')
-    # initial_guess = np.array([0.36700707, 0.44813551, 0.49615851, 0.53106272, 351.94981846])
+
+
+    # compute_score_topic_modeling(
+    #     score_cmp=score_computer,
+    #     min_sentence_len=4,
+    #     topic_cos_threshold=0.6,
+    #     news_clustering_threshold=0.6213551,
+    #     news_clustering_min_cluster_size=2,
+    #     stories_clustering_threshold=0.6615851,
+    #     stories_clustering_min_cluster_size=2,
+    #     stories_connecting_cos_threshold=1,
+    #     story_window=1,
+    #     lexic_result_word_num=5,
+    #     sclale_dist=500,
+    #     input_file_path=input_file_path,
+    #     verbose=True,
+    #     start='10.03.2014',
+    #     end='28.03.2014')
+    initial_guess = np.array([0.3, 0.4, 0.5, 0.5])
     # bounds = ((0.2, 0.8), (0.2, 0.8), (0.2, 0.8), (100, 300))
-    # result = optimize.minimize(f,
-    #                            initial_guess,
-    #                            tol=0.1,
-    #                            method='nelder-mead',
-    #                            options={'xtol': 0.1, 'maxiter': 20},
-    #                            )
-    # if result.success:
-    #     fitted_params = result.x
-    #     print(fitted_params)
-    # else:
-    #     raise ValueError(result.message)
+    result = optimize.minimize(f,
+                               initial_guess,
+                               tol=0.05,
+                               method='nelder-mead',
+                               options={'xtol': 0.1, 'maxiter': 20},
+                               )
+    if result.success:
+        fitted_params = result.x
+        print(fitted_params)
+    else:
+        raise ValueError(result.message)
